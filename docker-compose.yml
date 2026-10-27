@@ -4,16 +4,18 @@ services:
     #build: .
     image: bryangerlach/rdgen:latest
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      SECRET_KEY: "django-insecure-!(t-!f#6g#sr%yfded9(xha)g+=!6craeez^cp+*&bz_7vdk61"
-      GHUSER: "github_username"
-      GHBEARER: "github_access_token"
-      GENURL: "accessible_url_of_server"
-      ZIP_PASSWORD: ""
-      GHBRANCH: "master"
-      PROTOCOL: "https"
-      REPONAME: "rdgen"
-      SH_SECRET: ""
+      SECRET_KEY: "${SECRET_KEY:-django-insecure-default}"
+      GHUSER: "${GHUSER:-SamuelSilvaG}"
+      GHBEARER: "${GHBEARER:-}"
+      GENURL: "${GENURL:-http://localhost:8000}"
+      ZIP_PASSWORD: "${ZIP_PASSWORD:-}"
+      GHBRANCH: "${GHBRANCH:-master}"
+      PROTOCOL: "${PROTOCOL:-https}"
+      REPONAME: "${REPONAME:-rdgen}"
+      SH_SECRET: "${SH_SECRET:-}"
     ports:
       - "8000:8000"
     dns:
