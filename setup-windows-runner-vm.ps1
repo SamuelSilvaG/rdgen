@@ -36,7 +36,6 @@ if (-not $isAdmin) {
 
 Write-Step "1/8. Habilitando Suporte a Nomes Longos de Arquivo (Long Paths)"
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -Force
-git config --global core.longpaths true 2>$null
 
 Write-Step "2/8. Instalando Ferramentas Básicas via Winget (Git, Python, LLVM, ImageMagick, NASM)"
 winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements --silent
@@ -47,6 +46,10 @@ winget install --id NASM.NASM -e --source winget --accept-package-agreements --a
 
 # Atualizar PATH na sessão atual
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+if (Get-Command git -ErrorAction SilentlyContinue) {
+    git config --global core.longpaths true
+}
 
 Write-Step "3/8. Instalando Visual Studio 2022 Build Tools (C++ / MSVC / Windows SDK)"
 $vsInstallerArgs = "--quiet --wait --norestart --nocache " +
@@ -71,11 +74,12 @@ if ($env:Path -notlike "*$cargoPath*") {
 }
 
 # RustDesk recomenda Rust 1.75 para compatibilidade com sciter / flutter runner
-& "$cargoPath\rustup.exe" default 1.75.0-x86_64-pc-windows-msvc 2>$null
-if ($LASTEXITCODE -ne 0) {
-    & "$cargoPath\rustup.exe" install 1.75.0-x86_64-pc-windows-msvc
-    & "$cargoPath\rustup.exe" default 1.75.0-x86_64-pc-windows-msvc
-}
+Write-Host "Configurando toolchain Rust 1.75.0-x86_64-pc-windows-msvc..."
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+& "$cargoPath\rustup.exe" toolchain install 1.75.0-x86_64-pc-windows-msvc
+& "$cargoPath\rustup.exe" default 1.75.0-x86_64-pc-windows-msvc
+$ErrorActionPreference = $prevEAP
 
 Write-Step "5/8. Configurando Variáveis de Ambiente do LLVM"
 $llvmBin = "C:\Program Files\LLVM\bin"
