@@ -49,6 +49,7 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 
 if (Get-Command git -ErrorAction SilentlyContinue) {
     git config --global core.longpaths true
+    git config --system --add safe.directory "*"
 }
 
 Write-Step "3/8. Instalando Visual Studio 2022 Build Tools (C++ / MSVC / Windows SDK)"
@@ -74,6 +75,11 @@ if ($env:Path -notlike "*$cargoPath*") {
 }
 
 # RustDesk recomenda Rust 1.75 para compatibilidade com sciter / flutter runner
+[System.Environment]::SetEnvironmentVariable("CARGO_HOME", "$env:USERPROFILE\.cargo", "Machine")
+[System.Environment]::SetEnvironmentVariable("RUSTUP_HOME", "$env:USERPROFILE\.rustup", "Machine")
+$env:CARGO_HOME = "$env:USERPROFILE\.cargo"
+$env:RUSTUP_HOME = "$env:USERPROFILE\.rustup"
+
 Write-Host "Configurando toolchain Rust 1.75.0-x86_64-pc-windows-msvc..."
 $prevEAP = $ErrorActionPreference
 $ErrorActionPreference = "Continue"

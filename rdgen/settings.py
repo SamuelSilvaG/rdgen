@@ -41,6 +41,7 @@ ZIP_PASSWORD = os.environ.get("ZIP_PASSWORD",'insecure')
 PROTOCOL = os.environ.get("PROTOCOL", 'https')
 REPONAME = os.environ.get("REPONAME", 'rdgen')
 SH_SECRET = os.environ.get('SH_SECRET', 'secret')
+USE_SELF_HOSTED = os.environ.get('USE_SELF_HOSTED', 'True').lower() in ('true', '1')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

@@ -44,7 +44,12 @@ def generate_custom_client(params, full_url):
         On failure: includes 'error' and optionally 'status_code'.
     """
     user_secret = params.get('sh_secret_field', '')
-    selfhosted = (_settings.SH_SECRET == user_secret)
+    selfhosted_param = params.get('selfhosted', None)
+    use_self_hosted_setting = getattr(_settings, 'USE_SELF_HOSTED', False)
+    if selfhosted_param is not None:
+        selfhosted = bool(selfhosted_param) or (_settings.SH_SECRET == user_secret)
+    else:
+        selfhosted = (_settings.SH_SECRET == user_secret) or use_self_hosted_setting
     platform = params.get('platform', 'windows')
     version = params.get('version', '1.4.9')
     delayFix = params.get('delayFix', True)
@@ -404,7 +409,7 @@ def generator_view(request):
         form = GenerateForm(request.POST, request.FILES)
         if form.is_valid():
             params = form.cleaned_data
-            full_url = f"{_settings.PROTOCOL}://{request.get_host()}" if _settings.GENURL else f"{_settings.PROTOCOL}://{request.get_host()}"
+            full_url = _settings.GENURL if _settings.GENURL else f"{_settings.PROTOCOL}://{request.get_host()}"
             result = generate_custom_client(params, full_url)
             if result['success']:
                 return render(request, 'waiting.html', {
