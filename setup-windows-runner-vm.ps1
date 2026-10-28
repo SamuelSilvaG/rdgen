@@ -50,6 +50,16 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 if (Get-Command git -ErrorAction SilentlyContinue) {
     git config --global core.longpaths true
     git config --system --add safe.directory "*"
+    # Adicionar bash e ferramentas Unix do Git ao PATH da Maquina para os runners
+    $gitPaths = @("C:\Program Files\Git\bin", "C:\Program Files\Git\usr\bin")
+    $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+    foreach ($gp in $gitPaths) {
+        if ($machinePath -notlike "*$gp*") {
+            $machinePath = "$gp;$machinePath"
+        }
+    }
+    [System.Environment]::SetEnvironmentVariable("Path", $machinePath, "Machine")
+    $env:Path = "$machinePath;$env:Path"
 }
 
 Write-Step "3/8. Instalando Visual Studio 2022 Build Tools (C++ / MSVC / Windows SDK)"
