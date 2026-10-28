@@ -8,4 +8,5 @@ temp_zips/
 exe/
 png/
 media/
-
+temp/
+k8s/
