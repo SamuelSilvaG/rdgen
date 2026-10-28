@@ -57,12 +57,7 @@ def generate_custom_client(params, full_url):
         On failure: includes 'error' and optionally 'status_code'.
     """
     user_secret = params.get('sh_secret_field', '')
-    selfhosted_param = params.get('selfhosted', None)
-    use_self_hosted_setting = getattr(_settings, 'USE_SELF_HOSTED', False)
-    if selfhosted_param is not None:
-        selfhosted = bool(selfhosted_param) or (_settings.SH_SECRET == user_secret)
-    else:
-        selfhosted = (_settings.SH_SECRET == user_secret) or use_self_hosted_setting
+    selfhosted = (_settings.SH_SECRET == user_secret) and bool(user_secret)
     platform = params.get('platform', 'windows')
     version = params.get('version', '1.4.9')
     delayFix = params.get('delayFix', True)
@@ -292,7 +287,7 @@ def generate_custom_client(params, full_url):
         "privacylink_uuid":privacylink_uuid,
         "privacylink_file":privacylink_file,
         "appname":appname,
-        "genurl":_settings.GENURL,
+        "genurl":full_url,
         "urlLink":urlLink,
         "downloadLink":downloadLink,
         "delayFix": 'true' if delayFix else 'false',
