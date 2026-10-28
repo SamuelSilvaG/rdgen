@@ -97,14 +97,19 @@ jobs:
           zip_password: ${{ secrets.ZIP_PASSWORD }}
 
       - name: Finalize and Cleanup zip/json
-        if: always() # Run even if previous steps fail
+        if: always()
         continue-on-error: true
-        uses: fjogeleit/http-request-action@v1
-        with:
-          url: "${{ secrets.GENURL }}/cleanzip"
-          method: 'POST'
-          customHeaders: '{"Content-Type": "application/json"}'
-          data: '{"uuid": "${{ env.uuid }}"}'
+        shell: pwsh
+        run: |
+          $targetUrl = "${{ secrets.GENURL }}"
+          try {
+            $null = Invoke-WebRequest -Uri "$targetUrl/check_for_file" -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop
+          } catch {
+            $targetUrl = "http://localhost:8000"
+          }
+          try {
+            Invoke-RestMethod -Uri "$targetUrl/cleanzip" -Method Post -ContentType "application/json" -Body '{"uuid": "${{ env.uuid }}"}' -ErrorAction SilentlyContinue
+          } catch {}
 
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@v6
@@ -115,8 +120,15 @@ jobs:
       
       - name: Set rdgen value
         if: ${{ env.rdgen == 'true' }}
+        shell: pwsh
         run: |
-          echo "STATUS_URL=${{ secrets.GENURL }}/updategh" >> $env:GITHUB_ENV
+          $targetUrl = "${{ secrets.GENURL }}"
+          try {
+            $null = Invoke-WebRequest -Uri "$targetUrl/check_for_file" -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop
+          } catch {
+            $targetUrl = "http://localhost:8000"
+          }
+          echo "STATUS_URL=$targetUrl/updategh" >> $env:GITHUB_ENV
 
       - name: Set rdgen value
         if: ${{ env.rdgen == 'false' }}
@@ -646,8 +658,13 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |
-            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.exe" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.msi" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client || true
+            TARGET_URL="${{ secrets.GENURL }}"
+            if ! curl -s -f -o /dev/null -m 3 "$TARGET_URL/check_for_file"; then
+              echo "External GENURL unreachable from self-hosted runner, falling back to local http://localhost:8000"
+              TARGET_URL="http://localhost:8000"
+            fi
+            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.exe" -F "uuid=${{ env.uuid }}" "$TARGET_URL/save_custom_client"
+            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.msi" -F "uuid=${{ env.uuid }}" "$TARGET_URL/save_custom_client" || true
 
       - name: send file to api server
         if: ${{ env.rdgen == 'false' }}

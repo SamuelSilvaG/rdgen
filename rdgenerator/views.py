@@ -23,6 +23,19 @@ from urllib.parse import quote
 _UUID_RE = re.compile(r'^[0-9a-fA-F-]{36}$')
 _NAME_RE = re.compile(r'^[\w.-]+$')
 
+def get_service_url(request):
+    host = request.get_host()
+    scheme = 'https' if request.is_secure() or request.headers.get('x-forwarded-proto') == 'https' else getattr(_settings, 'PROTOCOL', 'https')
+    host_clean = host.split(':')[0]
+    is_local = host_clean in ('localhost', '127.0.0.1', '::1') or host_clean.startswith(('192.168.', '10.', '172.'))
+    if host and not is_local:
+        return f"{scheme}://{host}"
+    genurl = getattr(_settings, 'GENURL', '')
+    if genurl and 'seudominio.com' not in genurl:
+        return genurl
+    return f"{scheme}://{host}"
+
+
 def _safe_parts(uuid_val, filename):
     if not uuid_val or not _UUID_RE.match(uuid_val):
         return False
@@ -409,7 +422,7 @@ def generator_view(request):
         form = GenerateForm(request.POST, request.FILES)
         if form.is_valid():
             params = form.cleaned_data
-            full_url = _settings.GENURL if _settings.GENURL else f"{_settings.PROTOCOL}://{request.get_host()}"
+            full_url = get_service_url(request)
             result = generate_custom_client(params, full_url)
             if result['success']:
                 return render(request, 'waiting.html', {
