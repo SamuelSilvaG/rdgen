@@ -37,12 +37,22 @@ if (-not $isAdmin) {
 Write-Step "1/8. Habilitando Suporte a Nomes Longos de Arquivo (Long Paths)"
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -Force
 
-Write-Step "2/8. Instalando Ferramentas Básicas via Winget (Git, Python, LLVM, ImageMagick, NASM)"
+Write-Step "2/8. Instalando Ferramentas Básicas via Winget (Git, Python, PowerShell 7, 7-Zip, LLVM, ImageMagick, NASM, NuGet)"
 winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements --silent
 winget install --id Python.Python.3.12 -e --source winget --accept-package-agreements --accept-source-agreements --silent
+winget install --id Microsoft.PowerShell -e --source winget --accept-package-agreements --accept-source-agreements --silent
+winget install --id 7zip.7zip -e --source winget --accept-package-agreements --accept-source-agreements --silent
 winget install --id LLVM.LLVM -e --source winget --accept-package-agreements --accept-source-agreements --silent
 winget install --id ImageMagick.ImageMagick -e --source winget --accept-package-agreements --accept-source-agreements --silent
 winget install --id NASM.NASM -e --source winget --accept-package-agreements --accept-source-agreements --silent
+
+# Baixar NuGet CLI
+if (-not (Test-Path "C:\Windows\System32\nuget.exe")) {
+    Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile "C:\Windows\System32\nuget.exe"
+}
+
+# Instalar pacotes essenciais do Python
+& python -m pip install --upgrade pip pyzipper pillow pefile requests
 
 # Atualizar PATH na sessão atual
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
@@ -70,6 +80,22 @@ $vsInstallerArgs = "--quiet --wait --norestart --nocache " +
     "--add Microsoft.VisualStudio.Component.VC.CMake.Project"
 
 winget install --id Microsoft.VisualStudio.2022.BuildTools -e --source winget --override $vsInstallerArgs --accept-package-agreements --accept-source-agreements
+
+# Adicionar CMake e Ninja do VS, PowerShell 7 e 7-Zip ao PATH da Maquina
+$extraPaths = @(
+    "C:\Program Files\PowerShell\7",
+    "C:\Program Files\7-Zip",
+    "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin",
+    "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja"
+)
+$machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+foreach ($p in $extraPaths) {
+    if ($machinePath -notlike "*$p*") {
+        $machinePath = "$p;$machinePath"
+    }
+}
+[System.Environment]::SetEnvironmentVariable("Path", $machinePath, "Machine")
+$env:Path = "$machinePath;$env:Path" 
 
 Write-Step "4/8. Instalando Rustup e Toolchain Rust"
 if (-not (Get-Command rustup -ErrorAction SilentlyContinue)) {
