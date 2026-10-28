@@ -470,6 +470,20 @@ jobs:
             Write-Host "Error: printer-adapter folder not found in repository."
           }
 
+      - name: Install vcpkg dependencies
+        env:
+          VCPKG_DEFAULT_HOST_TRIPLET: ${{ matrix.job.vcpkg-triplet }}
+        run: |
+          if [ ! -f "$VCPKG_ROOT/installed/${{ matrix.job.vcpkg-triplet }}/include/libavutil/pixfmt.h" ]; then
+            echo "Installing vcpkg dependencies for ${{ matrix.job.vcpkg-triplet }}..."
+            $VCPKG_ROOT/vcpkg install \
+              --triplet ${{ matrix.job.vcpkg-triplet }} \
+              --x-install-root="$VCPKG_ROOT/installed"
+          else
+            echo "vcpkg dependencies already installed in $VCPKG_ROOT/installed/${{ matrix.job.vcpkg-triplet }}"
+          fi
+        shell: bash
+
       - name: Build rustdesk
         run: |
           # Windows: build RustDesk
